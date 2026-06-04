@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1085601937697",
+    "project_id": "bmi-calculator-526a6",
+    "storage_bucket": "bmi-calculator-526a6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1085601937697:android:00a496767ec3d6d24c2660",
+        "android_client_info": {
+          "package_name": "dev.jahidhasanco.bmicalculator"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAxL8cT1jjjABNwRs6YPYIsbFuNWdjzOCw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
