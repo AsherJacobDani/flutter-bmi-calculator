@@ -61,11 +61,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final secondaryTextColor = isDark ? AppColors.darkTextAdditional : AppColors.lightTextAdditional;
     final cardBgColor = isDark ? const Color(0xFF121212) : AppColors.white;
 
+    final displayName = _userProfile?.name.isNotEmpty == true
+        ? _userProfile!.name.split(' ').first
+        : 'User';
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'User Profile',
-          style: TextStyle(fontFamily: 'Larsseit', fontWeight: FontWeight.bold),
+        title: Text(
+          _isLoading ? 'Profile' : 'Hey, $displayName 👋',
+          style: const TextStyle(fontFamily: 'Larsseit', fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,

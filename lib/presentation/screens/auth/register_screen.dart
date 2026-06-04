@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../data/models/user_profile.dart';
+import '../../../data/repositories/user_profile_repository.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
@@ -10,66 +12,80 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _auth = FirebaseAuth.instance;
-  
+  final _userProfileRepository = UserProfileRepository();
+
+  String? _nameError;
   String? _emailError;
   String? _passwordError;
   bool _isLoading = false;
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
   Future<void> _registerUser() async {
+    final name = _nameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
     setState(() {
+      _nameError = null;
       _emailError = null;
       _passwordError = null;
     });
 
     bool isValid = true;
+    if (name.isEmpty) {
+      setState(() => _nameError = 'Name is required');
+      isValid = false;
+    }
     if (email.isEmpty) {
-      setState(() {
-        _emailError = 'Email is required';
-      });
+      setState(() => _emailError = 'Email is required');
       isValid = false;
     }
     if (password.isEmpty) {
-      setState(() {
-        _passwordError = 'Password is required';
-      });
+      setState(() => _passwordError = 'Password is required');
       isValid = false;
     } else if (password.length < 6) {
-      setState(() {
-        _passwordError = 'Password must be at least 6 characters';
-      });
+      setState(() => _passwordError = 'Password must be at least 6 characters');
       isValid = false;
     }
 
     if (!isValid) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      await _auth.createUserWithEmailAndPassword(
+      final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
+      // Save display name to Firebase Auth
+      await userCredential.user?.updateDisplayName(name);
+
+      // Save user profile locally with the real name
+      final userProfile = UserProfile(
+        userId: userCredential.user!.uid,
+        name: name,
+        email: email,
+        bmiHistory: [],
+      );
+      await _userProfileRepository.saveUserProfile(userProfile);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registration Successful')),
+          const SnackBar(content: Text('Registration Successful! Please sign in.')),
         );
-        Navigator.pop(context); // Go back to Login Screen
+        Navigator.pop(context);
       }
     } on FirebaseAuthException catch (e) {
       if (mounted) {
@@ -78,11 +94,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         );
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -109,11 +121,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Icon(
-                  Icons.person_add_rounded,
-                  size: 80,
-                  color: AppColors.primary,
-                ),
+                Icon(Icons.person_add_rounded, size: 80, color: AppColors.primary),
                 const SizedBox(height: 16),
                 Text(
                   'Register Account',
@@ -136,6 +144,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
+
+                // Name Field
+                TextField(
+                  controller: _nameController,
+                  textCapitalization: TextCapitalization.words,
+                  style: TextStyle(
+                    color: isDark ? AppColors.darkText : AppColors.lightText,
+                    fontFamily: 'Larsseit',
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Full Name',
+                    hintStyle: TextStyle(color: hintColor, fontFamily: 'Larsseit'),
+                    prefixIcon: const Icon(Icons.person_outline, color: AppColors.primary),
+                    errorText: _nameError,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Email Field
                 TextField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
@@ -151,6 +178,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
+
+                // Password Field
                 TextField(
                   controller: _passwordController,
                   obscureText: true,
@@ -166,6 +195,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
+
                 ElevatedButton(
                   onPressed: _isLoading ? null : _registerUser,
                   child: _isLoading
@@ -184,9 +214,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
                 TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
+                  onPressed: () => Navigator.pop(context),
                   child: Text(
                     "Already have an account? Sign In",
                     style: TextStyle(

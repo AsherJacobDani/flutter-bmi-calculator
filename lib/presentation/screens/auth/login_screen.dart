@@ -50,16 +50,25 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final user = userCredential.user;
       if (user != null) {
-        // Fetch or create user profile locally
+        // Use display name set during registration, fallback to email prefix
+        final name = (user.displayName != null && user.displayName!.isNotEmpty)
+            ? user.displayName!
+            : email.split('@')[0];
+
         UserProfile? existingProfile = await _userProfileRepository.getUserProfile();
         if (existingProfile == null || existingProfile.userId != user.uid) {
           final userProfile = UserProfile(
             userId: user.uid,
-            name: user.displayName ?? email.split('@')[0],
+            name: name,
             email: user.email ?? email,
             bmiHistory: [],
           );
           await _userProfileRepository.saveUserProfile(userProfile);
+        } else if (existingProfile.name.isEmpty ||
+            existingProfile.name == existingProfile.email.split('@')[0]) {
+          // Update name if it was never properly set
+          final updated = existingProfile.copyWith(name: name);
+          await _userProfileRepository.saveUserProfile(updated);
         }
 
         if (mounted) {
@@ -77,9 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        setState(() => _isLoading = false);
       }
     }
   }
