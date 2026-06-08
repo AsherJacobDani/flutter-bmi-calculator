@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../data/models/user_profile.dart';
 import '../../../data/models/bmi_record.dart';
 import '../../../data/repositories/user_profile_repository.dart';
@@ -25,7 +26,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadUserProfile() async {
     try {
-      final profile = await _userProfileRepository.getUserProfile();
+      var profile = await _userProfileRepository.getUserProfile();
+      final user = FirebaseAuth.instance.currentUser;
+      
+      if (user != null) {
+        if (profile == null || profile.userId != user.uid) {
+          // Sync or create local profile from Firebase Auth data
+          final name = (user.displayName != null && user.displayName!.isNotEmpty)
+              ? user.displayName!
+              : (user.email?.split('@')[0] ?? 'User');
+          profile = UserProfile(
+            userId: user.uid,
+            name: name,
+            email: user.email ?? '',
+            bmiHistory: [],
+          );
+          await _userProfileRepository.saveUserProfile(profile);
+        }
+      }
+
       setState(() {
         _userProfile = profile;
         _isLoading = false;
@@ -61,9 +80,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final secondaryTextColor = isDark ? AppColors.darkTextAdditional : AppColors.lightTextAdditional;
     final cardBgColor = isDark ? const Color(0xFF121212) : AppColors.white;
 
+    final firebaseUser = FirebaseAuth.instance.currentUser;
     final displayName = _userProfile?.name.isNotEmpty == true
         ? _userProfile!.name.split(' ').first
-        : 'User';
+        : (firebaseUser?.displayName != null && firebaseUser!.displayName!.isNotEmpty
+            ? firebaseUser.displayName!.split(' ').first
+            : 'User');
 
     return Scaffold(
       appBar: AppBar(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../main/main_screen.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../data/models/user_profile.dart';
 import '../../../data/repositories/user_profile_repository.dart';
@@ -83,9 +84,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registration Successful! Please sign in.')),
+          const SnackBar(content: Text('Registration Successful! Welcome!')),
         );
-        Navigator.pop(context);
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const MainScreen()),
+          (route) => false,
+        );
       }
     } on FirebaseAuthException catch (e) {
       if (mounted) {

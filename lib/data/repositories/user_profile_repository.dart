@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_profile.dart';
 import '../models/bmi_record.dart';
 
@@ -25,12 +26,22 @@ class UserProfileRepository {
   }
 
   Future<void> addBMIRecord(String userId, BMIRecord record) async {
-    final currentProfile = await getUserProfile();
-    if (currentProfile != null && currentProfile.userId == userId) {
-      final updatedHistory = List<BMIRecord>.from(currentProfile.bmiHistory)..add(record);
-      final updatedProfile = currentProfile.copyWith(bmiHistory: updatedHistory);
-      await saveUserProfile(updatedProfile);
+    var currentProfile = await getUserProfile();
+    if (currentProfile == null || currentProfile.userId != userId) {
+      final user = FirebaseAuth.instance.currentUser;
+      final name = (user?.displayName != null && user!.displayName!.isNotEmpty)
+          ? user.displayName!
+          : (user?.email?.split('@')[0] ?? 'User');
+      currentProfile = UserProfile(
+        userId: userId,
+        name: name,
+        email: user?.email ?? '',
+        bmiHistory: [],
+      );
     }
+    final updatedHistory = List<BMIRecord>.from(currentProfile.bmiHistory)..add(record);
+    final updatedProfile = currentProfile.copyWith(bmiHistory: updatedHistory);
+    await saveUserProfile(updatedProfile);
   }
 
   Future<List<BMIRecord>> getBMIHistory(String userId) async {

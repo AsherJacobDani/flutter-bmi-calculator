@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'core/theme/app_theme.dart';
+import 'firebase_options.dart';
 import 'presentation/screens/auth/login_screen.dart';
 import 'presentation/screens/main/main_screen.dart';
 
@@ -11,7 +12,9 @@ void main() async {
   // Initialize Firebase for the platform.
   // Note: On Android, this uses the google-services.json file we copied.
   // For iOS, make sure to add the GoogleService-Info.plist in Xcode.
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   runApp(const MyApp());
 }
